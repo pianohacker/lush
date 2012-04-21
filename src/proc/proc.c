@@ -4,6 +4,7 @@
 #include <lauxlib.h>
 #include <signal.h>
 #include <string.h>
+#include <sys/errno.h>
 #include <unistd.h>
 
 #define REG_TABLE "lush_proc"
@@ -314,7 +315,9 @@ static int l_getcwd(lua_State *L) {
 }
 
 static int l_chdir(lua_State *L) {
-	chdir(luaL_checkstring(L, 1));
+	if (chdir(luaL_checkstring(L, 1)) == -1) {
+		return luaL_error(L, strerror(errno));
+	}
 
 	return 0;
 }
