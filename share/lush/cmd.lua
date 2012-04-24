@@ -6,8 +6,11 @@ require "lush.trie"
 
 function Env:new()
 	return setmetatable({
+		charm_trie = lush.trie.new(Env.charms),
+		lua_env = setmetatable({
+			cmd_env = self,
+		}, {__index = _G}),
 		finished = false,
-		charm_trie = lush.trie.new(Env.charms)
 	}, {__index = self})
 end
 
@@ -69,9 +72,7 @@ function Env:run_lua(command)
 		return
 	end
 
-	setfenv(chunk, setmetatable({
-		cmd_env = self,
-	}, {__index = _G}))
+	setfenv(chunk, self.lua_env)
 	success, result = pcall(chunk)
 
 	if success then

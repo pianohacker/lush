@@ -4,10 +4,11 @@ require "lush.prompt"
 require "lush.cmd"
 
 lush.prompt.init()
-local cmd_env = lush.cmd.Env:new()
+cmd_env = lush.cmd.Env:new()
+line_editor = lush.prompt.Editor:new()
 
 repeat
-	command = lush.prompt.prompt(cmd_env)
+	command = line_editor:prompt(cmd_env)
 	if command == nil then break end
 
 	if command ~= '' then
