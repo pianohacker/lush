@@ -1,5 +1,7 @@
 module(..., package.seeall)
 
+require "lush.fmt"
+
 -- Output a string with special characters escaped
 function dumpstr(str)
 	result = ''
@@ -173,10 +175,10 @@ function Editor:getline(start_column)
 end
 
 function Editor:prompt(env)
-	local ps1 = env.get_ps1()
-	io.write(ps1)
+	local ps1 = lush.fmt.make(env:prompt())
+	io.write(tostring(ps1))
 
-	return self:getline(#ps1 + 1)
+	return self:getline(ps1.display_len + 1)
 end
 
 function init()

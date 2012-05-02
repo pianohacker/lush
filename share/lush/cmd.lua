@@ -1,21 +1,23 @@
 module(..., package.seeall)
 
-Env = {}
 inspect = require "lush.inspect"
+require "lush.fmt"
 require "lush.trie"
+require "lush.vals"
+
+Env = {}
 
 function Env:new()
-	return setmetatable({
+	obj = setmetatable({
 		charm_trie = lush.trie.new(Env.charms),
 		lua_env = setmetatable({
 			cmd_env = self,
 		}, {__index = _G}),
-		finished = false,
+		finished = false
 	}, {__index = self})
-end
 
-function Env:get_ps1()
-	return lush.proc.getcwd():gsub('^' .. os.getenv('HOME'), '~') .. '> '
+	obj.vals = lush.vals.Vals:new(obj)
+	return obj
 end
 
 Env.charms = {}
@@ -99,4 +101,14 @@ function Env:run(command)
 			break
 		end
 	end
+end
+
+function Env:run_file(filename)
+	chunk = loadfile(filename)
+	setfenv(chunk, self.lua_env)
+end
+
+--> User changeable methods
+function Env:prompt()
+	return lush.fmt.bold(self.vals.cwd) .. '> '
 end
