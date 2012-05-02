@@ -26,15 +26,17 @@ function Env.charms:exit(args)
 end
 
 function Env.charms:cd(args)
-	success, error = pcall(lush.proc.chdir, args)
+	if args == '' then args = '~' end
+
+	success, error = pcall(lush.proc.chdir, self:expand(args))
 
 	if not success then
 		print(".cd: " .. error)
 	end
 end
 
-function Env.charms:require(args)
-	require(args)
+function Env.charms:rc_reload(args)
+	self:run_file('~/.lushrc')
 end
 
 function Env:run_charm(command)
@@ -92,6 +94,8 @@ Env.processors = {
 }
 
 function Env:run(command)
+	if command == '' then return end
+
 	for i, processor in ipairs(self.processors) do
 		pattern, func = unpack(processor)
 		result = command:match(pattern)
@@ -103,9 +107,22 @@ function Env:run(command)
 	end
 end
 
+function Env:expand(filename)
+	return filename:gsub(
+		'^~',
+		os.getenv('HOME')
+	)
+end
+
 function Env:run_file(filename)
-	chunk = loadfile(filename)
+	chunk, message = loadfile(self:expand(filename))
+	if not chunk then
+		print(message)
+		return
+	end
+
 	setfenv(chunk, self.lua_env)
+	chunk()
 end
 
 --> User changeable methods

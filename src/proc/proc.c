@@ -5,6 +5,8 @@
 #include <signal.h>
 #include <string.h>
 #include <sys/errno.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 #include <unistd.h>
 
 #define REG_TABLE "lush_proc"
@@ -322,6 +324,12 @@ static int l_chdir(lua_State *L) {
 	return 0;
 }
 
+static int l_file_exists(lua_State *L) {
+	struct stat result;
+
+	return stat(luaL_checkstring(L, 1), &result) == 0 && S_IFREG & result.st_mode;
+}
+
 const luaL_Reg proc_reg[] = {
 	{ "signal",  l_signal  },
 	{ "alarm",   l_alarm   },
@@ -331,6 +339,7 @@ const luaL_Reg proc_reg[] = {
 	{ "sigmask",	l_mask	},
 	{ "getcwd",	l_getcwd	},
 	{ "chdir",	l_chdir	},
+	{ "file_exists", l_file_exists },
 	{  NULL,	 NULL	  },
 };
 
