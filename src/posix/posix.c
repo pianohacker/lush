@@ -9,7 +9,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#define REG_TABLE "lush_proc"
+#define REG_TABLE "lush_posix"
 
 static lua_State* gL = NULL;
 static lua_Hook old_hook = NULL;
@@ -330,7 +330,7 @@ static int l_file_exists(lua_State *L) {
 	return stat(luaL_checkstring(L, 1), &result) == 0 && S_IFREG & result.st_mode;
 }
 
-const luaL_Reg proc_reg[] = {
+const luaL_Reg posix_reg[] = {
 	{ "signal",  l_signal  },
 	{ "alarm",   l_alarm   },
 	{ "kill",	l_kill	},
@@ -343,14 +343,14 @@ const luaL_Reg proc_reg[] = {
 	{  NULL,	 NULL	  },
 };
 
-int luaopen_l_proc(lua_State* L)
+int luaopen_l_posix(lua_State* L)
 {
 	queue_init(&q, 4);
 
 	lua_newtable(L);
 	lua_setfield(L, LUA_REGISTRYINDEX, REG_TABLE);
 
-	luaL_register(L, "lush.proc", proc_reg);
+	luaL_register(L, "lush.posix", posix_reg);
 
 	return 1;
 }

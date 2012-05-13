@@ -17,7 +17,7 @@ char* lush_get_runtime_path(char *argv0) {
 }
 
 extern int luaopen_l_term(lua_State* L);
-extern int luaopen_l_proc(lua_State* L);
+extern int luaopen_l_posix(lua_State* L);
 
 int main(int argc, char *argv[]) {
 	char* runtime_path = strcat(strcat(malloc(PATH_MAX), lush_get_runtime_path(argv[0])), "/share");
@@ -31,7 +31,7 @@ int main(int argc, char *argv[]) {
 	lua_setglobal(L, "lush");
 
 	luaopen_l_term(L);
-	luaopen_l_proc(L);
+	luaopen_l_posix(L);
 
 	char* core_file = strcat(strcat(malloc(PATH_MAX), runtime_path), "/core.lua");
 

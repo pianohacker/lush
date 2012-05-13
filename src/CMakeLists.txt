@@ -8,9 +8,9 @@ add_executable(lush
 	src/lush.c
 	src/term/term.c
 	src/term/strings.c
-	src/proc/proc.c
-	src/proc/queue.c
-	src/proc/signames.c
+	src/posix/posix.c
+	src/posix/queue.c
+	src/posix/signames.c
 )
 include_directories(${LUA_INCLUDE_DIR})
 target_link_libraries(lush curses ${LUA_LIBRARIES})

@@ -15,7 +15,7 @@ function Vals:__index(key)
 end
 
 function Vals:raw_cwd()
-	return lush.proc.getcwd()
+	return lush.posix.getcwd()
 end
 
 function Vals:cwd()

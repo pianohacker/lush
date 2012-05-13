@@ -7,7 +7,7 @@ lush.prompt.init()
 cmd_env = lush.cmd.Env:new()
 line_editor = lush.prompt.Editor:new()
 
-if lush.proc.file_exists(cmd_env:expand('~/.lushrc')) then cmd_env:run_file('~/.lushrc') end
+if lush.posix.file_exists(cmd_env:expand('~/.lushrc')) then cmd_env:run_file('~/.lushrc') end
 
 repeat
 	command = line_editor:prompt(cmd_env)

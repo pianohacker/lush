@@ -186,8 +186,8 @@ function init()
 	lush.term.setcanon(false)
 	lush.term.setecho(false)
 
-	lush.proc.signal("INT", cleanup)
-	lush.proc.signal("TERM", cleanup)
+	lush.posix.signal("INT", cleanup)
+	lush.posix.signal("TERM", cleanup)
 end
 
 function cleanup(sig)

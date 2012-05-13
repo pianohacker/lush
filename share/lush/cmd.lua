@@ -28,7 +28,7 @@ end
 function Env.charms:cd(args)
 	if args == '' then args = '~' end
 
-	success, error = pcall(lush.proc.chdir, self:expand(args))
+	success, error = pcall(lush.posix.chdir, self:expand(args))
 
 	if not success then
 		print(".cd: " .. error)
@@ -127,5 +127,5 @@ end
 
 --> User changeable methods
 function Env:prompt()
-	return lush.fmt.bold(self.vals.cwd) .. '> '
+	return self.vals.cwd .. '> '
 end
