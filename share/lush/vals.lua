@@ -21,3 +21,7 @@ end
 function Vals:cwd()
 	return self.raw_cwd:gsub('^' .. os.getenv('HOME'), '~')
 end
+
+function Vals:hostname()
+	return lush.posix.gethostname()
+end

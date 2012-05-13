@@ -330,6 +330,15 @@ static int l_file_exists(lua_State *L) {
 	return stat(luaL_checkstring(L, 1), &result) == 0 && S_IFREG & result.st_mode;
 }
 
+static int l_gethostname(lua_State *L) {
+	char result[256];
+	gethostname(result, 256);
+
+	lua_pushstring(L, result);
+
+	return 1;
+}
+
 const luaL_Reg posix_reg[] = {
 	{ "signal",  l_signal  },
 	{ "alarm",   l_alarm   },
@@ -340,6 +349,7 @@ const luaL_Reg posix_reg[] = {
 	{ "getcwd",	l_getcwd	},
 	{ "chdir",	l_chdir	},
 	{ "file_exists", l_file_exists },
+	{ "gethostname", l_gethostname },
 	{  NULL,	 NULL	  },
 };
 
