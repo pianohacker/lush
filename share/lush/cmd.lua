@@ -39,7 +39,7 @@ function Env.charms:rc_reload(args)
 	self:run_file('~/.lushrc')
 end
 
-function Env:run_charm(command)
+function Env:charm_runner(command)
 	space_idx = command:find(' ')
 
 	if space_idx then
@@ -61,7 +61,7 @@ function Env:run_charm(command)
 	end
 end
 
-function Env:run_external(command)
+function Env:external_runner(command)
 	lush.term.setcanon(true)
 	lush.term.setecho(true)
 	os.execute(command)
@@ -69,7 +69,31 @@ function Env:run_external(command)
 	lush.term.setecho(false)
 end
 
-function Env:run_lua(command)
+_external_commands = lush.trie.new()
+
+for dir in os.getenv('PATH'):gmatch('[^:]+') do
+	pcall(function()
+		for entry in lush.posix.diriter(dir) do
+			if not (entry == '.' or entry == '..') then
+				_external_commands:set(entry, dir .. '/' .. entry)
+			end
+		end
+	end)
+end
+
+print(inspect(_external_commands))
+
+function Env:external_completer(command)
+	result = {}
+
+	for command in _external_commands:completions(command) do
+		table.insert(result, command)
+	end
+
+	return result
+end
+
+function Env:lua_runner(command)
 	chunk, message = loadstring(command)
 	if not chunk then
 		print(message)
@@ -86,25 +110,36 @@ function Env:run_lua(command)
 	end
 end
 
-Env.processors = {
-	{'^%.(.*)', Env.run_charm},
-	{'^=(.*)', function(self, command) Env.run_lua(self, 'return ' .. (command or '')) end},
-	{'^!(.*)', Env.run_lua},
-	{'^.*', Env.run_external},
+Env.runners = {
+	{'^%.(.*)', Env.charm_runner},
+	{'^=(.*)', function(self, command) self:lua_runner('return ' .. (command or '')) end},
+	{'^!(.*)', Env.lua_runner},
+	{'^.*', Env.external_runner},
 }
+
+Env.completers = {
+	{'^([^%.=! ][^ ]*)$', Env.external_completer},
+}
+
+function Env:get_context(kind, command)
+	if command == '' then return end
+
+	for i, processor in ipairs(self[kind]) do
+		pattern, func = unpack(processor)
+		result = {command:match(pattern)}
+
+		if result[1] then
+			return func, result
+		end
+	end
+end
 
 function Env:run(command)
 	if command == '' then return end
 
-	for i, processor in ipairs(self.processors) do
-		pattern, func = unpack(processor)
-		result = command:match(pattern)
+	runner, result = self:get_context('runners', command)
 
-		if result then
-			func(self, result)
-			break
-		end
-	end
+	runner(self, unpack(result))
 end
 
 function Env:expand(filename)

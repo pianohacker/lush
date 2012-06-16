@@ -2,6 +2,7 @@
 #include "signames.h"
 #include <lua.h>
 #include <lauxlib.h>
+#include <dirent.h>
 #include <signal.h>
 #include <string.h>
 #include <sys/errno.h>
@@ -339,23 +340,63 @@ static int l_gethostname(lua_State *L) {
 	return 1;
 }
 
+static int l_diriter_iter(lua_State *L) {
+	DIR *dir = *(DIR**) lua_touserdata(L, lua_upvalueindex(1));
+	struct dirent *entry;
+
+	if ((entry = readdir(dir)) == NULL) return 0;
+
+	lua_pushstring(L, entry->d_name);
+	return 1;
+}
+
+static int l_diriter_gc(lua_State *L) {
+	DIR *dir = *(DIR**) lua_touserdata(L, 1);
+	if (dir) closedir(dir);
+
+	return 0;
+}
+
+static int l_diriter(lua_State *L) {
+	DIR **dir = (DIR**) lua_newuserdata(L, sizeof(DIR*));
+
+	luaL_getmetatable(L, "lush.posix.diriter_m");
+	lua_setmetatable(L, -2);
+
+	*dir = opendir(luaL_checkstring(L, 1));
+
+	if (*dir == NULL) {
+		return luaL_error(L, strerror(errno));
+	}
+
+	lua_pushcclosure(L, l_diriter_iter, 1);
+
+	return 1;
+}
+
 const luaL_Reg posix_reg[] = {
-	{ "signal",  l_signal  },
 	{ "alarm",   l_alarm   },
+	{ "chdir",	l_chdir	},
+	{ "diriter", l_diriter },
+	{ "file_exists", l_file_exists },
+	{ "getcwd",	l_getcwd	},
+	{ "gethostname", l_gethostname },
 	{ "kill",	l_kill	},
 	{ "raise",   l_raise   },
-	{ "sigsuspend", l_suspend },
 	{ "sigmask",	l_mask	},
-	{ "getcwd",	l_getcwd	},
-	{ "chdir",	l_chdir	},
-	{ "file_exists", l_file_exists },
-	{ "gethostname", l_gethostname },
+	{ "signal",  l_signal  },
+	{ "sigsuspend", l_suspend },
 	{  NULL,	 NULL	  },
 };
 
 int luaopen_l_posix(lua_State* L)
 {
 	queue_init(&q, 4);
+
+	luaL_newmetatable(L, "lush.posix.diriter_m");
+	lua_pushstring(L, "__gc");
+	lua_pushcfunction(L, l_diriter_gc);
+	lua_settable(L, -3);
 
 	lua_newtable(L);
 	lua_setfield(L, LUA_REGISTRYINDEX, REG_TABLE);

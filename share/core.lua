@@ -5,7 +5,7 @@ require "lush.cmd"
 
 lush.prompt.init()
 cmd_env = lush.cmd.Env:new()
-line_editor = lush.prompt.Editor:new()
+line_editor = lush.prompt.Editor:new(cmd_env)
 
 if lush.posix.file_exists(cmd_env:expand('~/.lushrc')) then cmd_env:run_file('~/.lushrc') end
 

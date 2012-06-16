@@ -19,9 +19,10 @@ end
 
 Editor = {}
 
-function Editor:new()
+function Editor:new(env)
 	new_obj = setmetatable({
 		content = '',
+		env = env,
 		handlers = {},
 		history = {},
 		position = 1,
@@ -89,6 +90,10 @@ function Editor:bind_defaults()
 		line.position = #line.content + 1
 		line:move_cur()
 	end)
+
+	self:bind(k('ht'), function(line)
+		line:complete()
+	end)
 end
 
 function Editor:bind(seq, func)
@@ -140,6 +145,22 @@ function Editor:switch_history(new_pos)
 	self.history_pos = new_pos
 	self.content = self.act_history[self.history_pos]
 	self.position = #self.content + 1
+	self:refresh()
+end
+
+function Editor:complete()
+	completer, result = self.env:get_context('completers', self.content:sub(1, self.position - 1))
+
+	if not completer then return end
+
+	results = completer(self.env, unpack(result))
+
+	result = results[1]
+	if not result then return end
+
+	self.content = result .. self.content:sub(self.position)
+
+	self.position = #result + 1
 	self:refresh()
 end
 
