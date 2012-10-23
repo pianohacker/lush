@@ -81,8 +81,6 @@ for dir in os.getenv('PATH'):gmatch('[^:]+') do
 	end)
 end
 
-print(inspect(_external_commands))
-
 function Env:external_completer(command)
 	result = {}
 
@@ -118,7 +116,7 @@ Env.runners = {
 }
 
 Env.completers = {
-	{'^([^%.=! ][^ ]*)$', Env.external_completer},
+	{'^([^%.=! ][^ ]*)', Env.external_completer},
 }
 
 function Env:get_context(kind, command)

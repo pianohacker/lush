@@ -149,7 +149,14 @@ function Editor:switch_history(new_pos)
 end
 
 function Editor:complete()
-	completer, result = self.env:get_context('completers', self.content:sub(1, self.position - 1))
+	next_space = self.content:find(' ')
+	if next_space then
+		completed = self.content:sub(1, next_space - 1)
+	else
+		completed = self.content
+	end
+
+	completer, result = self.env:get_context('completers', completed)
 
 	if not completer then return end
 
@@ -158,9 +165,15 @@ function Editor:complete()
 	result = results[1]
 	if not result then return end
 
-	self.content = result .. self.content:sub(self.position)
+	prev_space = (next_space or #self.content) - #completed
 
-	self.position = #result + 1
+	while prev_space > 0 and self.content:byte(prev_space) ~= 32 do
+		prev_space = prev_space - 1
+	end
+
+	self.content = self.content:sub(1, prev_space) .. result .. self.content:sub(#completed + 1)
+
+	self.position = prev_space + #result + 1
 	self:refresh()
 end
 
