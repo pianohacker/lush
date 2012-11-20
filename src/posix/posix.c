@@ -8,9 +8,11 @@
 #include <sys/errno.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <sys/wait.h>
 #include <unistd.h>
 
 #define REG_TABLE "lush_posix"
+#define CHECKED_SYSCALL(expr) if((expr) == -1) return luaL_error(L, strerror(errno))
 
 static lua_State* gL = NULL;
 static lua_Hook old_hook = NULL;
@@ -374,11 +376,49 @@ static int l_diriter(lua_State *L) {
 	return 1;
 }
 
+static int l_fork(lua_State *L) {
+	int pid;
+
+	CHECKED_SYSCALL(pid = fork());
+	lua_pushinteger(L, pid);
+
+	return 1;
+}
+
+static int l_dup2(lua_State *L) {
+	CHECKED_SYSCALL(dup2(luaL_checkinteger(L, 1), luaL_checkinteger(L, 2)));
+
+	return 0;
+}
+
+static int l_waitpid(lua_State *L) {
+	int pid;
+	int status;
+
+	CHECKED_SYSCALL(pid = waitpid(luaL_optint(L, 1, -1), &status, 0));
+
+	lua_pushinteger(L, pid);
+	
+	if (WIFEXITED(status)) {
+		lua_pushboolean(L, 0);
+		lua_pushinteger(L, WEXITSTATUS(status));
+		return 3;
+	} else if (WIFSIGNALED(status)) {
+		lua_pushboolean(L, 1);
+		lua_pushinteger(L, WTERMSIG(status));
+		return 3;
+	} else {
+		return 1;
+	}
+}
+
 const luaL_Reg posix_reg[] = {
 	{ "alarm",   l_alarm   },
 	{ "chdir",	l_chdir	},
 	{ "diriter", l_diriter },
+	{ "dup2", l_dup2 },
 	{ "file_exists", l_file_exists },
+	{ "fork", l_fork },
 	{ "getcwd",	l_getcwd	},
 	{ "gethostname", l_gethostname },
 	{ "kill",	l_kill	},
