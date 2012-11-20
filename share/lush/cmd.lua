@@ -61,10 +61,55 @@ function Env:charm_runner(command)
 	end
 end
 
-function Env:external_runner(command)
+function Env:external_runner(full_command)
 	lush.term.setcanon(true)
 	lush.term.setecho(true)
-	os.execute(command)
+	
+	commands = {}
+	for command in full_command:gmatch('[^|]+') do
+		args = {}
+		for arg in command:gmatch('[^ ]+') do
+			args[#args + 1] = arg
+		end
+
+		commands[#commands + 1] = args
+	end
+
+	pipes = { {0, -1} }
+	for i = 2, #commands do
+		pipes[i] = { lush.posix.pipe() }
+	end
+	pipes[#pipes + 1] = {-1, 1}
+
+	for i, command in ipairs(commands) do
+		input = pipes[i]
+		output = pipes[i + 1]
+
+		if lush.posix.fork() == 0 then
+			if input[1] ~= 0 then
+				lush.posix.dup2(input[1], 0)
+			end
+
+			if output[2] ~= 1 then
+				lush.posix.dup2(output[2], 1)
+			end
+
+			for i = 2, #commands do
+				if (pipes[i][1] > 2) then lush.posix.close(pipes[i][1]) end
+				if (pipes[i][2] > 2) then lush.posix.close(pipes[i][2]) end
+			end
+
+			lush.posix.exec(unpack(commands[i]))
+		end
+	end
+
+	for i = 2, #commands do
+		lush.posix.close(pipes[i][1])
+		lush.posix.close(pipes[i][2])
+	end
+
+	while pcall(lush.posix.waitpid) do end
+
 	lush.term.setcanon(false)
 	lush.term.setecho(false)
 end

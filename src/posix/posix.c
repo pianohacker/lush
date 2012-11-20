@@ -4,6 +4,7 @@
 #include <lauxlib.h>
 #include <dirent.h>
 #include <signal.h>
+#include <stdlib.h>
 #include <string.h>
 #include <sys/errno.h>
 #include <sys/stat.h>
@@ -412,20 +413,54 @@ static int l_waitpid(lua_State *L) {
 	}
 }
 
+static int l_exec(lua_State *L) {
+	const char *file = luaL_checkstring(L, 1);
+	const char **args = calloc(sizeof(char*), lua_gettop(L));	
+
+	for (int i = 1; i <= lua_gettop(L); i++) {
+		args[i - 1] = luaL_checkstring(L, i);
+	}
+
+	CHECKED_SYSCALL(execvp(file, (char *const *) args));
+
+	return 0;
+}
+
+static int l_pipe(lua_State *L) {
+	int fds[2];
+
+	CHECKED_SYSCALL(pipe(fds));
+
+	lua_pushinteger(L, fds[0]);
+	lua_pushinteger(L, fds[1]);
+
+	return 2;
+}
+
+static int l_close(lua_State *L) {
+	CHECKED_SYSCALL(close(luaL_checkint(L, 1)));
+
+	return 0;
+}
+
 const luaL_Reg posix_reg[] = {
 	{ "alarm",   l_alarm   },
 	{ "chdir",	l_chdir	},
+	{ "close", l_close },
 	{ "diriter", l_diriter },
 	{ "dup2", l_dup2 },
+	{ "exec", l_exec },
 	{ "file_exists", l_file_exists },
 	{ "fork", l_fork },
 	{ "getcwd",	l_getcwd	},
 	{ "gethostname", l_gethostname },
 	{ "kill",	l_kill	},
+	{ "pipe", l_pipe },
 	{ "raise",   l_raise   },
 	{ "sigmask",	l_mask	},
 	{ "signal",  l_signal  },
 	{ "sigsuspend", l_suspend },
+	{ "waitpid", l_waitpid },
 	{  NULL,	 NULL	  },
 };
 
