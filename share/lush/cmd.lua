@@ -186,16 +186,16 @@ function Env:run(command)
 end
 
 function Env:expand(filename)
-	return filename:gsub(
+	return (filename:gsub(
 		'^~',
 		os.getenv('HOME')
-	)
+	))
 end
 
 function Env:run_file(filename)
 	chunk, message = loadfile(self:expand(filename))
 	if not chunk then
-		print(message)
+		print("Could not run " .. filename .. ": " .. message)
 		return
 	end
 
