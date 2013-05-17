@@ -13,6 +13,7 @@ function Env:new()
 		lua_env = setmetatable({
 			cmd_env = self,
 		}, {__index = _G}),
+		completion_cache = {},
 		finished = false
 	}, {__index = self})
 
@@ -31,12 +32,28 @@ function Env.charms:cd(args)
 	success, error = pcall(lush.posix.chdir, self:expand(args))
 
 	if not success then
-		print(".cd: " .. error)
+		io.stderr:write(".cd: " .. error .. "\n")
 	end
 end
 
 function Env.charms:rc_reload(args)
 	self:run_file('~/.lushrc')
+end
+
+function Env.charms:completion_reload(args)
+	_external_commands = lush.trie.new()
+
+	for dir in os.getenv('PATH'):gmatch('[^:]+') do
+		pcall(function()
+			for entry in lush.posix.diriter(dir) do
+				if not (entry == '.' or entry == '..') then
+					_external_commands:set(entry, dir .. '/' .. entry)
+				end
+			end
+		end)
+	end
+
+	self.completion_cache['external_completer'] = _external_commands
 end
 
 function Env:charm_runner(command)
@@ -99,7 +116,10 @@ function Env:external_runner(full_command)
 				if (pipes[i][2] > 2) then lush.posix.close(pipes[i][2]) end
 			end
 
-			lush.posix.exec(unpack(commands[i]))
+			result, error = pcall(lush.posix.exec, unpack(commands[i]))
+
+			-- If we were here, we failed
+			io.stderr:write(commands[i][1] .. ": " .. error .. "\n")
 		end
 	end
 
@@ -114,20 +134,14 @@ function Env:external_runner(full_command)
 	lush.term.setecho(false)
 end
 
-_external_commands = lush.trie.new()
-
-for dir in os.getenv('PATH'):gmatch('[^:]+') do
-	pcall(function()
-		for entry in lush.posix.diriter(dir) do
-			if not (entry == '.' or entry == '..') then
-				_external_commands:set(entry, dir .. '/' .. entry)
-			end
-		end
-	end)
-end
-
 function Env:external_completer(command)
 	result = {}
+
+	if not self.completion_cache['external_completer'] then
+		self.charms.completion_reload(self)
+	end
+
+	_external_commands = self.completion_cache['external_completer']
 
 	for command in _external_commands:completions(command) do
 		table.insert(result, command)
