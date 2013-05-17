@@ -2,6 +2,7 @@ module(..., package.seeall)
 
 Trie = {}
 
+-- Get the node for a given sequence, optionally creating it if necessary.
 function _get_node(node, key, vivify)
 	if #key == 0 then return node, '' end
 
@@ -16,6 +17,8 @@ function _get_node(node, key, vivify)
 	return _get_node(node[key:byte()], key:sub(2), vivify)
 end
 
+-- Create a new trie.
+-- @param values An optional table, whose key-value pairs will be stored in the trie
 function new(values)
 	new_trie = setmetatable({}, {
 		__index = Trie
@@ -30,12 +33,17 @@ function new(values)
 	return new_trie
 end
 
+-- Check to see if this trie has any nodes with the given prefix
 function Trie:has_prefix(key)
 	node, trail = _get_node(self, key)
 
 	return node and true
 end
 
+-- Get the value for the best match to a key.
+-- @param key The prefix to search for
+-- @return The value for the found node, or nil if it was not found
+-- @return Remaining text that was not matched by the node
 function Trie:get(key)
 	node, trail = _get_node(self, key)
 
@@ -44,6 +52,9 @@ function Trie:get(key)
 	return node._val, trail
 end
 
+-- Get all entries within this trie that start with the given key
+-- @param key The prefix to search for
+-- @return An iterator over all possible completions
 function Trie:completions(key)
 	start_node, trail = _get_node(self, key)
 
@@ -73,6 +84,7 @@ function Trie:completions(key)
 	end
 end
 
+-- Add the given key/value pair to the trie.
 function Trie:set(key, val)
 	node = _get_node(self, key, true)
 
