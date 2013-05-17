@@ -417,9 +417,11 @@ static int l_exec(lua_State *L) {
 	const char *file = luaL_checkstring(L, 1);
 	const char **args = calloc(sizeof(char*), lua_gettop(L));	
 
-	for (int i = 1; i <= lua_gettop(L); i++) {
+	int i;
+	for (i = 1; i <= lua_gettop(L); i++) {
 		args[i - 1] = luaL_checkstring(L, i);
 	}
+	args[i - 1] = NULL;
 
 	CHECKED_SYSCALL(execvp(file, (char *const *) args));
 
