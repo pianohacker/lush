@@ -2,18 +2,21 @@ module(..., package.seeall)
 
 inspect = require "lush.inspect"
 require "lush.fmt"
-require "lush.trie"
+require "lush.util.table"
+require "lush.util.trie"
 require "lush.vals"
 
 Env = {}
 
 function Env:new()
 	obj = setmetatable({
-		charm_trie = lush.trie.new(Env.charms),
+		charm_trie = lush.util.trie.new(Env.charms),
 		lua_env = setmetatable({
 			cmd_env = self,
 		}, {__index = _G}),
 		completion_cache = {},
+		completion_transitions = {},
+		completers = {},
 		finished = false
 	}, {__index = self})
 
@@ -41,7 +44,7 @@ function Env.charms:rc_reload(args)
 end
 
 function Env.charms:completion_reload(args)
-	_external_commands = lush.trie.new()
+	_external_commands = lush.util.trie.new()
 
 	for dir in os.getenv('PATH'):gmatch('[^:]+') do
 		pcall(function()
@@ -174,10 +177,6 @@ Env.runners = {
 	{'^.*', Env.external_runner},
 }
 
-Env.completers = {
-	{'^([^%.=! ][^ ]*)', Env.external_completer},
-}
-
 function Env:get_context(kind, command)
 	if command == '' then return end
 
@@ -189,6 +188,23 @@ function Env:get_context(kind, command)
 			return func, result
 		end
 	end
+end
+
+function Env:add_completion_transition(state, priority, pattern, new_state)
+	if not self.completion_transitions[state] then
+		self.completion_transitions[state] = {}
+	end
+
+	lush.util.table.insort(self.completion_transitions[state],
+		{
+			priority = priority,
+			pattern = pattern,
+			new_state = new_state,
+		},
+		function(a, b)
+			return a.priority < b.priority
+		end
+	)
 end
 
 function Env:run(command)
