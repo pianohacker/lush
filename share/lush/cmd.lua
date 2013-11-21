@@ -1,6 +1,7 @@
 module(..., package.seeall)
 
 inspect = require "lush.inspect"
+require "lush.completion"
 require "lush.fmt"
 require "lush.util.table"
 require "lush.util.trie"
@@ -19,6 +20,8 @@ function Env:new()
 		completers = {},
 		finished = false
 	}, {__index = self})
+
+	lush.completion.load_defaults(obj)
 
 	obj.vals = lush.vals.Vals:new(obj)
 	return obj
@@ -171,6 +174,7 @@ function Env:lua_runner(command)
 end
 
 Env.runners = {
+	{'^./.*', Env.external_runner},
 	{'^%.(.*)', Env.charm_runner},
 	{'^=(.*)', function(self, command) self:lua_runner('return ' .. (command or '')) end},
 	{'^!(.*)', Env.lua_runner},

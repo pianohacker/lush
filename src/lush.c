@@ -16,7 +16,14 @@ char* lush_get_runtime_path(char *argv0) {
 	return dir;
 }
 
+static int lush_atpanic(lua_State *L) {
+	fprintf(stderr, "lush: internal error: %s\n", lua_tostring(L, -1));
+
+	return 0;
+}
+
 extern int luaopen_l_term(lua_State* L);
+extern int luaopen_l_pcre(lua_State* L);
 extern int luaopen_l_posix(lua_State* L);
 
 int main(int argc, char *argv[]) {
@@ -24,6 +31,7 @@ int main(int argc, char *argv[]) {
 
 	lua_State* L = luaL_newstate();
 	luaL_openlibs(L);
+	lua_atpanic(L, lush_atpanic);
 
 	lua_newtable(L);
 	lua_pushstring(L, runtime_path);
@@ -31,6 +39,7 @@ int main(int argc, char *argv[]) {
 	lua_setglobal(L, "lush");
 
 	luaopen_l_term(L);
+	luaopen_l_pcre(L);
 	luaopen_l_posix(L);
 
 	char* core_file = strcat(strcat(malloc(PATH_MAX), runtime_path), "/core.lua");
