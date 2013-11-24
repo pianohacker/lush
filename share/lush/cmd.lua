@@ -194,6 +194,10 @@ function Env:get_context(kind, command)
 	end
 end
 
+function Env:set_completer(state, completer)
+	self.completers[state] = completer
+end
+
 function Env:add_completion_transition(state, priority, pattern, new_state)
 	if not self.completion_transitions[state] then
 		self.completion_transitions[state] = {}
