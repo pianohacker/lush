@@ -85,6 +85,12 @@ static int l_match(lua_State* L) {
 	luaL_checkstring(L, 2);
 	const char *subject = lua_tolstring(L, 2, &len);
 
+	int options = 0;
+
+	for (int argnum = 4; argnum <= lua_gettop(L); argnum++) {
+		options |= luaL_checkint(L, argnum);
+	}
+
 	pcre *pat;
 	pcre_extra *study;
 	bool should_free = _get_pat(L, &pat, &study);
@@ -92,7 +98,7 @@ static int l_match(lua_State* L) {
 	if (study) pcre_fullinfo(pat, study, PCRE_INFO_CAPTURECOUNT, &numgroups);
 	int ovecsize = (numgroups + 1) * 3;
 	int ovector[ovecsize];
-	int result = pcre_exec(pat, study, subject, len, luaL_optint(L, 3, 0), 0, ovector, ovecsize);
+	int result = pcre_exec(pat, study, subject, len, luaL_optint(L, 3, 1) - 1, options, ovector, ovecsize);
 
 	if (result == 0) return luaL_error(L, "Not enough space for uncompiled capture groups");
 
@@ -140,17 +146,23 @@ extern int luaopen_l_pcre(lua_State* L) {
 	_ADD_CONSTANT(FIRSTLINE);
 	_ADD_CONSTANT(JAVASCRIPT_COMPAT);
 	_ADD_CONSTANT(MULTILINE);
-	_ADD_CONSTANT(NEWLINE_CR);
-	_ADD_CONSTANT(NEWLINE_LF);
-	_ADD_CONSTANT(NEWLINE_CRLF);
-	_ADD_CONSTANT(NEWLINE_ANYCRLF);
 	_ADD_CONSTANT(NEWLINE_ANY);
+	_ADD_CONSTANT(NEWLINE_ANYCRLF);
+	_ADD_CONSTANT(NEWLINE_CR);
+	_ADD_CONSTANT(NEWLINE_CRLF);
+	_ADD_CONSTANT(NEWLINE_LF);
 	_ADD_CONSTANT(NO_AUTO_CAPTURE);
 	_ADD_CONSTANT(NO_START_OPTIMIZE);
+	_ADD_CONSTANT(NOTBOL);
+	_ADD_CONSTANT(NOTEMPTY);
+	_ADD_CONSTANT(NOTEMPTY_ATSTART);
+	_ADD_CONSTANT(NOTEOL);
+	_ADD_CONSTANT(NO_UTF8_CHECK);
+	_ADD_CONSTANT(PARTIAL_HARD);
+	_ADD_CONSTANT(PARTIAL_SOFT);
 	_ADD_CONSTANT(UCP);
 	_ADD_CONSTANT(UNGREEDY);
 	_ADD_CONSTANT(UTF8);
-	_ADD_CONSTANT(NO_UTF8_CHECK);
 
 	// Add compiled regex type
 	luaL_newmetatable(L, "lush.pcre.Pattern");

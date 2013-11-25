@@ -1,5 +1,6 @@
 module(..., package.seeall)
 
+require "lush.completion"
 require "lush.fmt"
 
 -- Output a string with special characters escaped
@@ -149,29 +150,25 @@ function Editor:switch_history(new_pos)
 end
 
 function Editor:complete()
-	next_space = self.content:find(' ')
-	if next_space then
-		completed = self.content:sub(1, next_space - 1)
-	else
-		completed = self.content
-	end
-
-	completer, result = self.env:get_context('completers', completed)
-
-	if not completer then return end
-
-	results = completer(self.env, unpack(result))
-
-	result = results[1]
-	if not result then return end
-
-	prev_space = (next_space or #self.content) - #completed
-
+	prev_space = self.position
 	while prev_space > 0 and self.content:byte(prev_space) ~= 32 do
 		prev_space = prev_space - 1
 	end
 
-	self.content = self.content:sub(1, prev_space) .. result .. self.content:sub(#completed + 1)
+	next_space = self.content:find(' ', self.position)
+	if next_space then
+		completed = self.content:sub(prev_space + 1, next_space - 1)
+	else
+		completed = self.content:sub(prev_space + 1)
+		next_space = -1
+	end
+
+	results = self.env:complete(self.content:sub(1, next_space), completed)
+
+	result = results[1]
+	if not result then return end
+
+	self.content = self.content:sub(1, prev_space) .. result .. self.content:sub(next_space)
 
 	self.position = prev_space + #result + 1
 	self:refresh()

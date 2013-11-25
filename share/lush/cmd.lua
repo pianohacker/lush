@@ -46,22 +46,6 @@ function Env.charms:rc_reload(args)
 	self:run_file('~/.lushrc')
 end
 
-function Env.charms:completion_reload(args)
-	_external_commands = lush.util.trie.new()
-
-	for dir in os.getenv('PATH'):gmatch('[^:]+') do
-		pcall(function()
-			for entry in lush.posix.diriter(dir) do
-				if not (entry == '.' or entry == '..') then
-					_external_commands:set(entry, dir .. '/' .. entry)
-				end
-			end
-		end)
-	end
-
-	self.completion_cache['external_completer'] = _external_commands
-end
-
 function Env:charm_runner(command)
 	space_idx = command:find(' ')
 
@@ -140,22 +124,6 @@ function Env:external_runner(full_command)
 	lush.term.setecho(false)
 end
 
-function Env:external_completer(command)
-	result = {}
-
-	if not self.completion_cache['external_completer'] then
-		self.charms.completion_reload(self)
-	end
-
-	_external_commands = self.completion_cache['external_completer']
-
-	for command in _external_commands:completions(command) do
-		table.insert(result, command)
-	end
-
-	return result
-end
-
 function Env:lua_runner(command)
 	chunk, message = loadstring(command)
 	if not chunk then
@@ -206,7 +174,7 @@ function Env:add_completion_transition(state, priority, pattern, new_state)
 	lush.util.table.insort(self.completion_transitions[state],
 		{
 			priority = priority,
-			pattern = pattern,
+			pattern = lush.pcre.compile(pattern, lush.pcre.ANCHORED),
 			new_state = new_state,
 		},
 		function(a, b)
@@ -221,6 +189,33 @@ function Env:run(command)
 	runner, result = self:get_context('runners', command)
 
 	runner(self, unpack(result))
+end
+
+function Env:complete(context, word)
+	local state = 'start'
+	local position = 1
+	local match
+	
+	while position < #context do
+		for i, transition in ipairs(self.completion_transitions[state]) do
+			match = transition.pattern:match(context, position)
+
+			if match ~= nil then 
+				assert(transition.new_state ~= state or #match, 'pointless transition')
+				state = transition.new_state
+				position = position + #match
+				break
+			end
+		end
+
+		if match == nil then break end
+		match = nil
+	end
+
+	assert(state ~= 'start', 'no completions found')
+	assert(self.completers[state], 'unknown completer `' .. state .. '`')
+
+	return self.completers[state](self, context, word)
 end
 
 function Env:expand(filename)
