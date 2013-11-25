@@ -110,6 +110,7 @@ function Env:external_runner(full_command)
 
 			-- If we were here, we failed
 			io.stderr:write(commands[i][1] .. ": " .. error .. "\n")
+			os.exit()
 		end
 	end
 
@@ -198,6 +199,7 @@ function Env:complete(context, word)
 	
 	while position < #context do
 		for i, transition in ipairs(self.completion_transitions[state]) do
+			print(transition.priority)
 			match = transition.pattern:match(context, position)
 
 			if match ~= nil then 
