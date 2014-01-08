@@ -150,25 +150,39 @@ function Editor:switch_history(new_pos)
 end
 
 function Editor:complete()
-	prev_space = self.position
+	local prev_space = self.position
 	while prev_space > 0 and self.content:byte(prev_space) ~= 32 do
 		prev_space = prev_space - 1
 	end
 
-	next_space = self.content:find(' ', self.position)
+	local completed
+	local next_space = self.content:find(' ', self.position)
 	if next_space then
 		completed = self.content:sub(prev_space + 1, next_space - 1)
 	else
 		completed = self.content:sub(prev_space + 1)
-		next_space = -1
 	end
 
-	results = self.env:complete(self.content:sub(1, next_space), completed)
+	if #completed == 0 then return end
 
-	result = results[1]
-	if not result then return end
+	local result, results
+	if self.last_complete == completed then
+		print(#self.last_complete_results)
+		print(self.last_complete_idx)
+		self.last_complete_idx = self.last_complete_idx % #self.last_complete_results + 1
+		result = self.last_complete_results[self.last_complete_idx]
+	else
+		results = self.env:complete(self.content:sub(1, next_space or -1), completed)
+		self.last_complete_results = results
+		self.last_complete_idx = 1
 
-	self.content = self.content:sub(1, prev_space) .. result .. self.content:sub(next_space)
+		result = results[1]
+		if not result then return end
+		if #results == 1 then result = result .. ' ' end
+		self.last_complete = completed
+	end
+
+	self.content = self.content:sub(1, prev_space) .. result .. self.content:sub(next_space or (#self.content + 1))
 
 	self.position = prev_space + #result + 1
 	self:refresh()

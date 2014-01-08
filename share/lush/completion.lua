@@ -13,7 +13,7 @@ function _complete_external_command(env, context, command)
 		end)
 	end
 
-	result = {}
+	local result = {}
 
 	for command in _external_commands:completions(command) do
 		table.insert(result, command)

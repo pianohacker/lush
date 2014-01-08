@@ -197,9 +197,8 @@ function Env:complete(context, word)
 	local position = 1
 	local match
 	
-	while position < #context do
+	while position <= #context do
 		for i, transition in ipairs(self.completion_transitions[state]) do
-			print(transition.priority)
 			match = transition.pattern:match(context, position)
 
 			if match ~= nil then 
