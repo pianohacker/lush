@@ -1,6 +1,6 @@
 module(..., package.seeall)
 
-function _complete_external_command(env, context, command)
+function _complete_external_command(sh, context, command)
 	_external_commands = lush.util.trie.new()
 
 	for dir in os.getenv('PATH'):gmatch('[^:]+') do
@@ -22,17 +22,17 @@ function _complete_external_command(env, context, command)
 	return result
 end
 
-function _complete_command_argument(env, context, word)
+function _complete_command_argument(sh, context, word)
 	return {}
 end
 
-function load_defaults(env)
-	local setc = env.set_completer
-	local addt = env.add_completion_transition
+function load_defaults(sh)
+	local setc = sh.set_completer
+	local addt = sh.add_completion_transition
 	
-	addt(env, 'start', 9, [[[^/]+\b]], 'external-command')
-	addt(env, 'external-command', 5, [[ ]], 'command-argument')
+	addt(sh, 'start', 9, [[[^/]+\b]], 'external-command')
+	addt(sh, 'external-command', 5, [[ ]], 'command-argument')
 
-	setc(env, 'command-argument', _complete_command_argument)
-	setc(env, 'external-command', _complete_external_command)
+	setc(sh, 'command-argument', _complete_command_argument)
+	setc(sh, 'external-command', _complete_external_command)
 end

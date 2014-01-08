@@ -2,9 +2,9 @@ module(..., package.seeall)
 
 Vals = {}
 
-function Vals:new(cmd_env)
+function Vals:new(sh)
 	return setmetatable({
-		cmd_env = cmd_env,
+		sh = sh,
 	}, {
 		__index = Vals.__index,
 	})

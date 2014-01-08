@@ -1,22 +1,22 @@
 package.path = lush.runtime_path .. "/?.lua;" .. package.path
 
 require "lush.prompt"
-require "lush.cmd"
+require "lush.shell"
 
 lush.prompt.init()
-cmd_env = lush.cmd.Env:new()
-line_editor = lush.prompt.Editor:new(cmd_env)
+local sh = lush.shell.Shell:new()
+local editor = lush.prompt.Editor:new(sh)
 
-if lush.posix.file_exists(cmd_env:expand('~/.lushrc')) then cmd_env:run_file('~/.lushrc') end
+if lush.posix.file_exists(sh:expand('~/.lushrc')) then sh:run_file('~/.lushrc') end
 
 repeat
-	command = line_editor:prompt(cmd_env)
+	command = line_editor:prompt(sh)
 	if command == nil then
 		print ""
 		break
 	end
 
-	cmd_env:run(command)
-until cmd_env.finished
+	sh:run(command)
+until sh.finished
 
 lush.prompt.cleanup()

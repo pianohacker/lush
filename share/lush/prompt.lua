@@ -20,10 +20,10 @@ end
 
 Editor = {}
 
-function Editor:new(env)
+function Editor:new(sh)
 	new_obj = setmetatable({
 		content = '',
-		env = env,
+		sh = sh,
 		handlers = {},
 		history = {},
 		position = 1,
@@ -172,7 +172,7 @@ function Editor:complete()
 		self.last_complete_idx = self.last_complete_idx % #self.last_complete_results + 1
 		result = self.last_complete_results[self.last_complete_idx]
 	else
-		results = self.env:complete(self.content:sub(1, next_space or -1), completed)
+		results = self.sh:complete(self.content:sub(1, next_space or -1), completed)
 		self.last_complete_results = results
 		self.last_complete_idx = 1
 
@@ -219,8 +219,8 @@ function Editor:getline(start_column)
 	return self.content
 end
 
-function Editor:prompt(env)
-	local ps1 = lush.fmt.make(env:prompt())
+function Editor:prompt(sh)
+	local ps1 = lush.fmt.make(sh:prompt())
 	io.write(tostring(ps1))
 
 	return self:getline(ps1.display_len + 1)

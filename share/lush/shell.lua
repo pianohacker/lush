@@ -7,13 +7,12 @@ require "lush.util.table"
 require "lush.util.trie"
 require "lush.vals"
 
-Env = {}
+Shell = {}
 
-function Env:new()
+function Shell:new()
 	obj = setmetatable({
-		charm_trie = lush.util.trie.new(Env.charms),
+		charm_trie = lush.util.trie.new(Shell.charms),
 		lua_env = setmetatable({
-			cmd_env = self,
 		}, {__index = _G}),
 		completion_cache = {},
 		completion_transitions = {},
@@ -27,12 +26,12 @@ function Env:new()
 	return obj
 end
 
-Env.charms = {}
-function Env.charms:exit(args)
+Shell.charms = {}
+function Shell.charms:exit(args)
 	self.finished = true
 end
 
-function Env.charms:cd(args)
+function Shell.charms:cd(args)
 	if args == '' then args = '~' end
 
 	success, error = pcall(lush.posix.chdir, self:expand(args))
@@ -42,17 +41,17 @@ function Env.charms:cd(args)
 	end
 end
 
-function Env.charms:rc_reload(args)
+function Shell.charms:rc_reload(args)
 	self:run_file('~/.lushrc')
 end
 
-function Env:charm_runner(command)
-	space_idx = command:find(' ')
+function Shell:charm_runner(command)
+	local space_idx = command:find(' ')
 
 	if space_idx then
-		charm, args = command:sub(1, space_idx-1), command:sub(space_idx+1)
+		local charm, args = command:sub(1, space_idx-1), command:sub(space_idx+1)
 	else
-		charm, args = command, ''
+		local charm, args = command, ''
 	end
 
 	if not self.charms[charm] then
@@ -68,11 +67,11 @@ function Env:charm_runner(command)
 	end
 end
 
-function Env:external_runner(full_command)
+function Shell:external_runner(full_command)
 	lush.term.setcanon(true)
 	lush.term.setecho(true)
 	
-	commands = {}
+	local commands = {}
 	for command in full_command:gmatch('[^|]+') do
 		args = {}
 		for arg in command:gmatch('[^ ]+') do
@@ -82,7 +81,7 @@ function Env:external_runner(full_command)
 		commands[#commands + 1] = args
 	end
 
-	pipes = { {0, -1} }
+	local pipes = { {0, -1} }
 	for i = 2, #commands do
 		pipes[i] = { lush.posix.pipe() }
 	end
@@ -125,15 +124,15 @@ function Env:external_runner(full_command)
 	lush.term.setecho(false)
 end
 
-function Env:lua_runner(command)
-	chunk, message = loadstring(command)
+function Shell:lua_runner(command)
+	local chunk, message = loadstring(command)
 	if not chunk then
 		print(message)
 		return
 	end
 
 	setfenv(chunk, self.lua_env)
-	success, result = pcall(chunk)
+	local success, result = pcall(chunk)
 
 	if success then
 		if result ~= nil then print(inspect(result)) end
@@ -142,20 +141,20 @@ function Env:lua_runner(command)
 	end
 end
 
-Env.runners = {
-	{'^./.*', Env.external_runner},
-	{'^%.(.*)', Env.charm_runner},
+Shell.runners = {
+	{'^./.*', Shell.external_runner},
+	{'^%.(.*)', Shell.charm_runner},
 	{'^=(.*)', function(self, command) self:lua_runner('return ' .. (command or '')) end},
-	{'^!(.*)', Env.lua_runner},
-	{'^.*', Env.external_runner},
+	{'^!(.*)', Shell.lua_runner},
+	{'^.*', Shell.external_runner},
 }
 
-function Env:get_context(kind, command)
+function Shell:get_context(kind, command)
 	if command == '' then return end
 
 	for i, processor in ipairs(self[kind]) do
-		pattern, func = unpack(processor)
-		result = {command:match(pattern)}
+		local pattern, func = unpack(processor)
+		local result = {command:match(pattern)}
 
 		if result[1] then
 			return func, result
@@ -163,11 +162,11 @@ function Env:get_context(kind, command)
 	end
 end
 
-function Env:set_completer(state, completer)
+function Shell:set_completer(state, completer)
 	self.completers[state] = completer
 end
 
-function Env:add_completion_transition(state, priority, pattern, new_state)
+function Shell:add_completion_transition(state, priority, pattern, new_state)
 	if not self.completion_transitions[state] then
 		self.completion_transitions[state] = {}
 	end
@@ -184,15 +183,15 @@ function Env:add_completion_transition(state, priority, pattern, new_state)
 	)
 end
 
-function Env:run(command)
+function Shell:run(command)
 	if command == '' then return end
 
-	runner, result = self:get_context('runners', command)
+	local runner, result = self:get_context('runners', command)
 
 	runner(self, unpack(result))
 end
 
-function Env:complete(context, word)
+function Shell:complete(context, word)
 	local state = 'start'
 	local position = 1
 	local match
@@ -219,15 +218,15 @@ function Env:complete(context, word)
 	return self.completers[state](self, context, word)
 end
 
-function Env:expand(filename)
+function Shell:expand(filename)
 	return (filename:gsub(
 		'^~',
 		os.getenv('HOME')
 	))
 end
 
-function Env:run_file(filename)
-	chunk, message = loadfile(self:expand(filename))
+function Shell:run_file(filename)
+	local chunk, message = loadfile(self:expand(filename))
 	if not chunk then
 		print("Could not run " .. filename .. ": " .. message)
 		return
@@ -238,6 +237,6 @@ function Env:run_file(filename)
 end
 
 --> User changeable methods
-function Env:prompt()
+function Shell:prompt()
 	return self.vals.cwd .. '> '
 end
