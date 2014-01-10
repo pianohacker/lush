@@ -12,8 +12,7 @@ Shell = {}
 function Shell:new()
 	obj = setmetatable({
 		charm_trie = lush.util.trie.new(Shell.charms),
-		lua_env = setmetatable({
-		}, {__index = _G}),
+		lua_env = setmetatable({}, {__index = _G}),
 		completion_cache = {},
 		completion_transitions = {},
 		completers = {},
@@ -23,6 +22,7 @@ function Shell:new()
 	lush.completion.load_defaults(obj)
 
 	obj.vals = lush.vals.Vals:new(obj)
+	obj.lua_env.sh = obj
 	return obj
 end
 

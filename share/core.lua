@@ -10,7 +10,7 @@ local editor = lush.prompt.Editor:new(sh)
 if lush.posix.file_exists(sh:expand('~/.lushrc')) then sh:run_file('~/.lushrc') end
 
 repeat
-	command = line_editor:prompt(sh)
+	command = editor:prompt(sh)
 	if command == nil then
 		print ""
 		break
