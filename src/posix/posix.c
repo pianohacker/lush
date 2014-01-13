@@ -451,26 +451,44 @@ static int l_close(lua_State *L) {
 	return 0;
 }
 
+static int l_basename(lua_State *L) {
+	char *string = strdup(luaL_checkstring(L, 1));
+	lua_pushstring(L, basename(string));
+	free(string);
+
+	return 1;
+}
+
+static int l_dirname(lua_State *L) {
+	char *string = strdup(luaL_checkstring(L, 1));
+	lua_pushstring(L, dirname(string));
+	free(string);
+
+	return 1;
+}
+
 const luaL_Reg posix_reg[] = {
-	{ "alarm",   l_alarm   },
-	{ "chdir",	l_chdir	},
+	{ "alarm", l_alarm },
+	{ "basename", l_basename },
+	{ "chdir", l_chdir },
 	{ "close", l_close },
 	{ "diriter", l_diriter },
+	{ "dirname", l_dirname },
 	{ "dir_exists", l_dir_exists },
 	{ "dup2", l_dup2 },
 	{ "exec", l_exec },
 	{ "file_exists", l_file_exists },
 	{ "fork", l_fork },
-	{ "getcwd",	l_getcwd	},
+	{ "getcwd", l_getcwd },
 	{ "gethostname", l_gethostname },
-	{ "kill",	l_kill	},
+	{ "kill", l_kill },
 	{ "pipe", l_pipe },
-	{ "raise",   l_raise   },
-	{ "sigmask",	l_mask	},
-	{ "signal",  l_signal  },
+	{ "raise", l_raise },
+	{ "sigmask", l_mask },
+	{ "signal", l_signal },
 	{ "sigsuspend", l_suspend },
 	{ "waitpid", l_waitpid },
-	{  NULL,	 NULL	  },
+	{  NULL, NULL },
 };
 
 int luaopen_l_posix(lua_State* L)

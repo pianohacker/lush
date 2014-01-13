@@ -12,11 +12,6 @@ if os.getenv('LUSH_DEBUG') then
 else
 	log.open(log_filename, log.WARN)
 end
-log.debug("debug: %s", "yes")
-log.internal("internal: %s", "yes")
-log.info("info: %s", "yes")
-log.warn("warn: %s", "yes")
-log.error("error: %s", "yes")
 
 require "lush.prompt"
 require "lush.shell"
@@ -28,7 +23,7 @@ local editor = lush.prompt.Editor:new(sh)
 sh:reload_config()
 
 repeat
-	command = editor:prompt(sh)
+	local command = editor:prompt(sh)
 	if command == nil then
 		print ""
 		break

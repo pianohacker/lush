@@ -7,7 +7,7 @@
 #include <string.h>
 
 char* lush_get_runtime_path(char *argv0) {
-	char* dir = realpath(dirname(argv0), NULL);
+	char* dir = realpath(dirname(strdup(argv0)), NULL);
 
 	if (strlen(dir) >= 4 && strcmp(dir + strlen(dir) - 4, "/bin") == 0) {
 		dir[strlen(dir) - 4] = 0;

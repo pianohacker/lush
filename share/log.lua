@@ -8,16 +8,25 @@ ERROR = 5
 
 local _output = nil
 local _level = ERROR
+date_format = '%Y/%m/%d %H:%M:%S'
+line_format = 'From %s, line %d: '
+entry_format = '[%s] %s%s'
 
 function open(filename, level)
 	_output = io.open(filename, 'a')
+	_output:setvbuf('no')
 	_level = level
 end
 
 function _log(level, format, ...)
 	if level < _level then return end
+	local lineinfo = ''
+	if level <= INTERNAL then
+		local frame = _G.debug.getinfo(2, 'Sl')
+		lineinfo = line_format:format(frame.source:gsub('@', ''):gsub(lush.runtime_path, '...'), frame.currentline)
+	end
 
-	_output:write(format:format(...) .. '\n')
+	_output:write(entry_format:format(os.date(date_format), lineinfo, format:format(...)) .. '\n')
 end
 
 function debug(format, ...) _log(DEBUG, format, ...) end
