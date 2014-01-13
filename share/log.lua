@@ -6,11 +6,12 @@ INFO = 3
 WARN = 4
 ERROR = 5
 
+local _levelnames = {'DEBUG', 'INTERNAL', 'INFO', 'WARN', 'ERROR'}
 local _output = nil
 local _level = ERROR
 date_format = '%Y/%m/%d %H:%M:%S'
-line_format = 'From %s, line %d: '
-entry_format = '[%s] %s%s'
+line_format = ' (%s, line %d)'
+entry_format = '[%s, %s] %s%s'
 
 function open(filename, level)
 	_output = io.open(filename, 'a')
@@ -22,11 +23,11 @@ function _log(level, format, ...)
 	if level < _level then return end
 	local lineinfo = ''
 	if level <= INTERNAL then
-		local frame = _G.debug.getinfo(2, 'Sl')
+		local frame = _G.debug.getinfo(3, 'Sl')
 		lineinfo = line_format:format(frame.source:gsub('@', ''):gsub(lush.runtime_path, '...'), frame.currentline)
 	end
 
-	_output:write(entry_format:format(os.date(date_format), lineinfo, format:format(...)) .. '\n')
+	_output:write(entry_format:format(os.date(date_format), _levelnames[level], format:format(...), lineinfo) .. '\n')
 end
 
 function debug(format, ...) _log(DEBUG, format, ...) end

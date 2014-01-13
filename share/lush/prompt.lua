@@ -1,5 +1,6 @@
 module(..., package.seeall)
 
+require "log"
 require "lush.completion"
 require "lush.fmt"
 
@@ -206,6 +207,8 @@ function Editor:getline(start_column)
 			self.handlers[seq](self)
 			seq = ''
 		elseif not self:handler_prefix(seq) then
+			if #seq > 1 then log.internal('Unrecognized sequence: %s', dumpstr(seq)) end
+			seq = seq:gsub('%c', '')
 			self.content = self.content:sub(1, self.position - 1) .. seq .. self.content:sub(self.position)
 			self.position = self.position + #seq
 			self:refresh()
