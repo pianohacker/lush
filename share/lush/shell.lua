@@ -42,6 +42,7 @@ function Shell.charms:cd(args)
 end
 
 function Shell.charms:rc_reload(args)
+	self:reload_config()
 	self:run_file('~/.lushrc')
 end
 
@@ -234,6 +235,12 @@ function Shell:run_file(filename)
 
 	setfenv(chunk, self.lua_env)
 	chunk()
+end
+
+function Shell:reload_config()
+	for i, filename in ipairs({'~/.lushrc', '~/.lush/rc', '~/.lush/lushrc'}) do
+		if lush.posix.file_exists(self:expand(filename)) then self:run_file(filename) end
+	end
 end
 
 --> User changeable methods

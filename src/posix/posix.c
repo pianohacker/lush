@@ -328,6 +328,12 @@ static int l_chdir(lua_State *L) {
 	return 0;
 }
 
+static int l_dir_exists(lua_State *L) {
+	struct stat result;
+
+	return stat(luaL_checkstring(L, 1), &result) == 0 && S_IFDIR & result.st_mode;
+}
+
 static int l_file_exists(lua_State *L) {
 	struct stat result;
 
@@ -450,6 +456,7 @@ const luaL_Reg posix_reg[] = {
 	{ "chdir",	l_chdir	},
 	{ "close", l_close },
 	{ "diriter", l_diriter },
+	{ "dir_exists", l_dir_exists },
 	{ "dup2", l_dup2 },
 	{ "exec", l_exec },
 	{ "file_exists", l_file_exists },
