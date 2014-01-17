@@ -3,7 +3,7 @@ project(lush)
 
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(LUAJIT luajit)
-set(CMAKE_C_FLAGS "-std=gnu99 -lpcre")
+set(CMAKE_C_FLAGS "-std=gnu99")
 set(CMAKE_C_FLAGS_DEBUG "-ggdb3")
 
 add_executable(lush
@@ -16,4 +16,4 @@ add_executable(lush
 	src/posix/signames.c
 )
 include_directories(${LUAJIT_INCLUDE_DIRS})
-target_link_libraries(lush curses ${LUAJIT_LDFLAGS})
+target_link_libraries(lush curses pcre ${LUAJIT_LDFLAGS})

@@ -20,7 +20,7 @@ static int l_setupterm(lua_State* L) {
 }
 
 static int l_tigetflag(lua_State* L) {
-	int result = tigetflag(luaL_checkstring(L, 1));
+	int result = tigetflag((char *) luaL_checkstring(L, 1));
 
 	switch(result) {
 		case -1:
@@ -34,7 +34,7 @@ static int l_tigetflag(lua_State* L) {
 }
 
 static int l_tigetnum(lua_State* L) {
-	int result = tigetnum(luaL_checkstring(L, 1));
+	int result = tigetnum((char *) luaL_checkstring(L, 1));
 
 	switch(result) {
 		case -2:
@@ -48,7 +48,7 @@ static int l_tigetnum(lua_State* L) {
 }
 
 static int l_tigetstr(lua_State* L) {
-	char *result = tigetstr(luaL_checkstring(L, 1));
+	char *result = tigetstr((char *) luaL_checkstring(L, 1));
 
 	switch((signed int) result) {
 		case -1:
@@ -62,7 +62,7 @@ static int l_tigetstr(lua_State* L) {
 }
 
 static int l_putcap(lua_State* L) {
-	char *cap = tigetstr(luaL_checkstring(L, 1));
+	char *cap = tigetstr((char *) luaL_checkstring(L, 1));
 
 	switch((signed int) cap) {
 		case -1:
@@ -77,7 +77,7 @@ static int l_putcap(lua_State* L) {
 		args[i] = luaL_checkint(L, argnum);
 	}
 
-	putp(tiparm(cap, args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7], args[8]));
+	putp((char *) tparm(cap, args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7], args[8]));
 
 	return 0;
 }

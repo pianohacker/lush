@@ -44,6 +44,8 @@ static int l___gc(lua_State* L) {
 	_l_pcre_pattern *pattern = (_l_pcre_pattern *) luaL_checkudata(L, 1, "lush.pcre.Pattern");
 	pcre_free(pattern->result);
 	pcre_free_study(pattern->study);
+	
+	return 0;
 }
 
 static bool _get_pat(lua_State* L, pcre **result, pcre_extra **study) {
