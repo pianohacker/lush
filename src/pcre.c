@@ -3,6 +3,10 @@
 
 #include <lauxlib.h>
 
+#if PCRE_MAJOR > 8 && PCRE_MINOR >= 20
+#define pcre_free_study pcre_free
+#endif
+
 typedef struct {
 	pcre *result;
 	pcre_extra *study;
@@ -34,8 +38,12 @@ static int l_compile(lua_State* L) {
 	lua_setmetatable(L, -2);
 
 	pattern->result = result;
+#ifdef PCRE_STUDY_JIT_COMPILE
 	const char *error;
 	pattern->study = pcre_study(result, PCRE_STUDY_JIT_COMPILE, &error);
+#else
+	pattern->study = NULL;
+#endif
 
 	return 1;
 }
@@ -43,8 +51,9 @@ static int l_compile(lua_State* L) {
 static int l___gc(lua_State* L) {
 	_l_pcre_pattern *pattern = (_l_pcre_pattern *) luaL_checkudata(L, 1, "lush.pcre.Pattern");
 	pcre_free(pattern->result);
-	pcre_free_study(pattern->study);
-	
+
+	if (pattern->study) pcre_free_study(pattern->study);
+
 	return 0;
 }
 

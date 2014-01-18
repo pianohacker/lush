@@ -1,8 +1,11 @@
 #include "queue.h"
 #include "signames.h"
+
 #include <lua.h>
 #include <lauxlib.h>
+
 #include <dirent.h>
+#include <libgen.h>
 #include <signal.h>
 #include <stdlib.h>
 #include <string.h>

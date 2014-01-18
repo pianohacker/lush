@@ -19,7 +19,9 @@ function dumpstr(str)
 	return result
 end
 
-Editor = {}
+Editor = {
+	actions = {},
+}
 
 function Editor:new(sh)
 	new_obj = setmetatable({
@@ -34,6 +36,14 @@ function Editor:new(sh)
 	new_obj:bind_defaults()
 
 	return new_obj
+end
+
+function Editor.actions:move_left()
+	-- Handle left arrow key
+	if line.position == 1 then return end
+
+	line.position = line.position - 1
+	line:move_cur()
 end
 
 function Editor:bind_defaults()
