@@ -3,7 +3,7 @@
 
 #include <lauxlib.h>
 
-#if PCRE_MAJOR > 8 && PCRE_MINOR >= 20
+#if PCRE_MAJOR > 8 && PCRE_MINOR <= 20
 #define pcre_free_study pcre_free
 #endif
 
