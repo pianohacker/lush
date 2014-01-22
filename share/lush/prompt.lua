@@ -228,7 +228,7 @@ function Editor:getline(start_column)
 			self.handlers[seq](self)
 			seq = ''
 		elseif not self:handler_prefix(seq) then
-			if #seq > 1 or #seq.match('^%c$') then log.internal('Unrecognized sequence: %s', dumpstr(seq)) end
+			if #seq > 1 or #seq:match('^%c$') then log.internal('Unrecognized sequence: %s', dumpstr(seq)) end
 			seq = seq:gsub('%c', '')
 			self.content = self.content:sub(1, self.position - 1) .. seq .. self.content:sub(self.position)
 			self.position = self.position + #seq
