@@ -3,6 +3,8 @@ module(..., package.seeall)
 require "log"
 require "lush.completion"
 require "lush.fmt"
+require "lush.prompt.actions"
+require "lush.prompt.bindings"
 
 -- Output a string with special characters escaped
 function dumpstr(str)
@@ -19,151 +21,49 @@ function dumpstr(str)
 	return result
 end
 
-Editor = {
-	actions = {},
-}
+Editor = {}
 
 function Editor:new(sh)
-	new_obj = setmetatable({
+	obj = setmetatable({
 		content = '',
 		sh = sh,
+		actions = {},
 		handlers = {},
 		history = {},
 		position = 1,
 		ready = false,
 	}, {__index = self})
 
-	new_obj:bind_defaults()
-
-	return new_obj
-end
-
-function Editor.actions:complete()
-	local prev_space = self.position
-	while prev_space > 0 and self.content:byte(prev_space) ~= 32 do
-		prev_space = prev_space - 1
+	for action, handler in pairs(lush.prompt.actions.default_actions) do
+		obj.actions[action] = handler
 	end
 
-	local completed
-	local next_space = self.content:find(' ', self.position)
-	if next_space then
-		completed = self.content:sub(prev_space + 1, next_space - 1)
-	else
-		completed = self.content:sub(prev_space + 1)
-	end
+	obj:load_bindings(lush.prompt.bindings.emacs)
 
-	if #completed == 0 then return end
-
-	local result, results
-	if self.last_complete == completed then
-		print(#self.last_complete_results)
-		print(self.last_complete_idx)
-		self.last_complete_idx = self.last_complete_idx % #self.last_complete_results + 1
-		result = self.last_complete_results[self.last_complete_idx]
-	else
-		results = self.sh:complete(self.content:sub(1, next_space or -1), completed)
-		self.last_complete_results = results
-		self.last_complete_idx = 1
-
-		result = results[1]
-		if not result then return end
-		if #results == 1 then result = result .. ' ' end
-		self.last_complete = completed
-	end
-
-	self.content = self.content:sub(1, prev_space) .. result .. self.content:sub(next_space or (#self.content + 1))
-
-	self.position = prev_space + #result + 1
-	self:refresh()
+	return obj
 end
 
-function Editor.actions:delete_left()
-	if self.position == 1 then return end
-	
-	self.content = self.content:sub(1, self.position - 2) .. self.content:sub(self.position)
-	self.position = self.position - 1
-	self:refresh()
-end
-
-function Editor.actions:delete_right()
-	self.content = self.content:sub(1, self.position - 1) .. self.content:sub(self.position + 1)
-	self:refresh()
-end
-
-function Editor.actions:finish()
-	self.ready = true
-	self:move_cur(#self.content + 1)
-end
-
-function Editor.actions:history_show_prev()
-	if self.history_pos == 1 then return end
-
-	self:switch_history(self.history_pos - 1)
-end
-
-function Editor.actions:history_show_next()
-	if self.history_pos == #self.act_history then return end
-
-	self:switch_history(self.history_pos + 1)
-end
-
-function Editor.actions:move_left()
-	-- Handle left arrow key
-	if self.position == 1 then return end
-
-	self.position = self.position - 1
-	self:move_cur()
-end
-
-function Editor.actions:move_right()
-	-- Handle right arrow key
-	if self.position == #self.content + 1 then return end
-
-	self.position = self.position + 1
-	self:move_cur()
-end
-
-function Editor.actions:move_to_start()
-	self.position = 1
-	self:move_cur()
-end
-
-function Editor.actions:move_to_end()
-	self.position = #self.content + 1
-	self:move_cur()
-end
-
-function Editor:bind_defaults()
-	k = lush.term.tigetstr
-
-	self:bind(k('kbs'), 'delete_left')
-	self:bind('\b', 'delete_left')
-	self:bind(k('kdch1'), 'delete_right')
-
-	self:bind(k('cr'), 'finish')
-	self:bind('\n', 'finish')
-
-	-- The gsub is because terminfo is a _filthy_ liar
-	-- More specifically, the termcap for xterm only contains the key sequences
-	-- for the numpad versions of the arrow keys.
-	-- Why? Because your mother dresses you funny, that's why.
-	self:bind(k('kcub1'):gsub('O', '['), 'move_left') -- Left arrow key
-	self:bind(k('kcuf1'):gsub('O', '['), 'move_right') -- Right arrow key
-	self:bind(k('kcuu1'):gsub('O', '['), 'history_show_prev') -- Up arrow key
-	self:bind(k('kcud1'):gsub('O', '['), 'history_show_next') -- Down arrow key
-
-	self:bind(k('khome'), 'move_to_start')
-	self:bind(k('kend'), 'move_to_end')
-	self:bind(k('ht'), 'complete')
-end
-
-function Editor:bind(seq, func)
+function Editor:bind(seq, action)
 	if #seq == 0 then return end
+	if type(seq) == 'table' then return Editor:load_bindings(seq) end
 
-	if type(func) == 'string' then
-		self.handlers[seq] = self.actions[func]
-	else
-		self.handlers[seq] = func
+	self.handlers[seq] = action
+end
+
+function Editor:load_bindings(bindings)
+	for i, binding in ipairs(bindings) do
+		if binding.terminfo then
+			local success = pcall(function()
+				self:bind(lush.term.tigetstr(binding.terminfo), binding[1])
+			end)
+			if not (success or binding.fallback) then
+				log.warn('Could not bind terminfo `%s` to %s')
+			end
+
+			if binding.fallback and not self.handlers[binding.fallback] then
+				self:bind(binding.fallback, binding[1])
+			end
+		end
 	end
 end
 
@@ -225,7 +125,8 @@ function Editor:getline(start_column)
 		seq = seq .. char
 
 		if self.handlers[seq] then
-			self.handlers[seq](self)
+			self.actions[self.handlers[seq]](self)
+			self.last_action = self.handlers[seq]
 			seq = ''
 		elseif not self:handler_prefix(seq) then
 			if #seq > 1 or seq:match('^%c$') then log.internal('Unrecognized sequence: %s', dumpstr(seq)) end

@@ -8,7 +8,7 @@ ERROR = 5
 
 local _levelnames = {'DEBUG', 'INTERNAL', 'INFO', 'WARN', 'ERROR'}
 local _output = nil
-local _level = ERROR
+local _level = WARN
 date_format = '%Y/%m/%d %H:%M:%S'
 line_format = ' (%s, line %d)'
 entry_format = '[%s, %s] %s%s'
