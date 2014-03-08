@@ -4,6 +4,14 @@ require "log"
 
 default_actions = {}
 
+function default_actions:insert_text(seq)
+	if #seq > 1 or seq:match('^%c$') then log.internal('Unrecognized sequence: %s', dumpstr(seq)) end
+	seq = seq:gsub('%c', '')
+	self.content = self.content:sub(1, self.position - 1) .. seq .. self.content:sub(self.position)
+	self.position = self.position + #seq
+	self:refresh()
+end
+
 function default_actions:complete()
 	local prev_space = self.position
 	while prev_space > 0 and self.content:byte(prev_space) ~= 32 do

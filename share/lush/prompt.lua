@@ -28,7 +28,7 @@ function Editor:new(sh)
 		content = '',
 		sh = sh,
 		actions = {},
-		handlers = {},
+		bindings = {},
 		history = {},
 		position = 1,
 		ready = false,
@@ -47,7 +47,10 @@ function Editor:bind(seq, action)
 	if #seq == 0 then return end
 	if type(seq) == 'table' then return Editor:load_bindings(seq) end
 
-	self.handlers[seq] = action
+	self.bindings[seq] = action
+end
+
+function Editor:bind_keys(keys, action)
 end
 
 function Editor:load_bindings(bindings)
@@ -60,9 +63,17 @@ function Editor:load_bindings(bindings)
 				log.warn('Could not bind terminfo `%s` to %s')
 			end
 
-			if binding.fallback and not self.handlers[binding.fallback] then
+			if binding.fallback and not self.bindings[binding.fallback] then
 				self:bind(binding.fallback, binding[1])
 			end
+		elseif binding.keys then
+			success, error = pcall(function()
+				self:bind_keys(binding.keys, binding[1])
+			end)
+
+			if not success then log.error(error) end
+		elseif binding.text then
+			self:bind(binding.text, binding[1])
 		end
 	end
 end
@@ -70,7 +81,7 @@ end
 -- Checks to see if the current sequence is the prefix of a handled string
 -- Useful for seeing if we should wait for more characters or just output the sequence
 function Editor:handler_prefix(seq)
-	for k, v in pairs(self.handlers) do
+	for k, v in pairs(self.bindings) do
 		if k:sub(1, #seq) == seq then return true end
 	end
 
@@ -124,16 +135,17 @@ function Editor:getline(start_column)
 		if char == nil or char:byte() == 4 then return nil end
 		seq = seq .. char
 
-		if self.handlers[seq] then
-			self.actions[self.handlers[seq]](self)
-			self.last_action = self.handlers[seq]
-			seq = ''
+		action = nil
+
+		if self.bindings[seq] then
+			action = self.bindings[seq]
 		elseif not self:handler_prefix(seq) then
-			if #seq > 1 or seq:match('^%c$') then log.internal('Unrecognized sequence: %s', dumpstr(seq)) end
-			seq = seq:gsub('%c', '')
-			self.content = self.content:sub(1, self.position - 1) .. seq .. self.content:sub(self.position)
-			self.position = self.position + #seq
-			self:refresh()
+			action = self.bindings['_default']
+		end
+
+		if action then
+			self.actions[action](self, seq)
+			self.last_action = action
 			seq = ''
 		end
 	until self.ready

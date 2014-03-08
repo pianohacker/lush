@@ -21,4 +21,5 @@ emacs = {
 	{ terminfo = 'khome', 'move_to_start' },
 	{ terminfo = 'kend', 'move_to_end' },
 	{ terminfo = 'ht', fallback = '\t', 'complete' },
+	{ text = '_default', 'insert_text' }
 }

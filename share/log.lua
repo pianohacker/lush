@@ -1,5 +1,7 @@
 module(..., package.seeall)
 
+inspect = require "lush.inspect"
+
 DEBUG = 1
 INTERNAL = 2
 INFO = 3
@@ -27,7 +29,23 @@ function _log(level, format, ...)
 		lineinfo = line_format:format(frame.source:gsub('@', ''):gsub(lush.runtime_path, '...'), frame.currentline)
 	end
 
-	_output:write(entry_format:format(os.date(date_format), _levelnames[level], format:format(...), lineinfo) .. '\n')
+	if type(format) == 'string' then
+		args = {...}
+	else
+		args = {format, ...}
+		format = '%s'
+		for i, arg in ipairs({...}) do
+			format = format .. ' %s'
+		end
+	end
+
+	for i, arg in ipairs(args) do
+		if type(arg) == 'table' then
+			args[i] = inspect(arg)
+		end
+	end
+
+	_output:write(entry_format:format(os.date(date_format), _levelnames[level], format:format(unpack(args)), lineinfo) .. '\n')
 end
 
 function debug(format, ...) _log(DEBUG, format, ...) end
